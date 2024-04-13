@@ -25,7 +25,10 @@ where
 
     // first round
     let g_1 = Prover::construct_univariate(&p.g, &r_i, 0);
-    if !v.check_claim(&g_1, p.h, 0) {
+    let _g_1 = Prover::construct_univariate_poly(&p.g, &r_i, 0);
+    println!("_g_1:{:?}", _g_1.to_vec());
+    println!("g_1:{:?}", g_1.to_vec());
+    if !v.check_claim(&_g_1, p.h, 0) {
         panic!("claimed failed at first round");
     }
     let mut r = v.send_random_challenge();

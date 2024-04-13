@@ -1,3 +1,4 @@
+use crate::utils::get_variable_degree;
 use ark_ff::Field;
 use ark_poly::{univariate::DensePolynomial, DenseMVPolynomial, Polynomial};
 use rand::Rng;
@@ -24,23 +25,6 @@ where
         F::from(2)
     }
 
-    // get degree of a variable of the multivariate polynomial
-    fn get_variable_degree(&self, variable: usize) -> usize {
-        let terms = &self.g.terms();
-        let mut max = 0usize;
-
-        for i in 0..terms.len() {
-            // there's probably a better way to get the degree lol
-            if terms[i].1.len() != 0 && terms[i].1[0].0 == variable {
-                let deg = terms[i].1[0].1;
-                if deg > max {
-                    max = deg;
-                }
-            }
-        }
-        max
-    }
-
     pub fn check_claim(&self, g_j: &DensePolynomial<F>, c_j: F, round: usize) -> bool {
         // check if g_j(0) + g_j(1) = c_j
         let eval_zero = g_j.evaluate(&F::zero());
@@ -52,7 +36,7 @@ where
         }
 
         // check if deg(g_j) <= deg_j(g)
-        let deg_g = self.get_variable_degree(round);
+        let deg_g = get_variable_degree(&self.g, round);
         let deg_g_j = g_j.degree();
         if deg_g_j > deg_g {
             return false;

@@ -1,5 +1,6 @@
 mod interactive;
 mod prover;
+mod utils;
 mod verifier;
 
 use ark_bls12_381::Fq;
