@@ -1,4 +1,5 @@
 mod interactive;
+mod non_interactive;
 mod prover;
 mod utils;
 mod verifier;
