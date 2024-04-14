@@ -1,5 +1,5 @@
 # rust-sumcheck
-rust implementation of the sumcheck protocol + fiat-shamir with poseidon
+rust implementation of the sumcheck protocol, interactive or non-interactive (using merlin).
 
 hopefully complete, but definitely not sound
 

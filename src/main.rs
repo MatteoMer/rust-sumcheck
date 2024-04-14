@@ -1,14 +1,17 @@
 mod interactive;
 mod non_interactive;
 mod prover;
+mod serialize;
+mod transcript;
 mod utils;
 mod verifier;
 
 use ark_bls12_381::Fq;
 use ark_poly::{
     polynomial::multivariate::{SparsePolynomial, SparseTerm, Term},
-    DenseMVPolynomial,
+    DenseMVPolynomial, Polynomial,
 };
+use non_interactive::non_interactive_protocol;
 use verifier::Verifier;
 
 use crate::interactive::interactive_protocol;
@@ -28,5 +31,18 @@ fn main() {
     let p = Prover::new(&g).unwrap();
     let v = Verifier::new(&g);
 
-    interactive_protocol(&p, &v);
+    println!("[sumcheck] starting interactive protocol");
+    let mut valid = interactive_protocol(&p, &v);
+    if !valid {
+        panic!("[sumcheck] interactive protocol is not valid");
+    }
+    println!("[sumcheck] interactive protocol is valid");
+
+    println!("[sumcheck] starting non-interactive protocol");
+    let proof = non_interactive_protocol(&p);
+    valid = v.verify_non_interactive_proof(&p.g, &p.h, p.g.degree(), &proof);
+    if !valid {
+        panic!("[sumcheck] interactive protocol is not valid");
+    }
+    println!("[sumcheck] non-interactive protocol is valid");
 }
