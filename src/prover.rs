@@ -1,11 +1,9 @@
 use ark_ff::Field;
 use ark_poly::{
-    multivariate::{SparsePolynomial, SparseTerm},
+    multivariate::{SparsePolynomial, SparseTerm, Term},
     univariate::DensePolynomial,
-    DenseMVPolynomial, DenseUVPolynomial, Evaluations, Polynomial,
+    DenseMVPolynomial, DenseUVPolynomial, Polynomial,
 };
-
-use crate::utils::get_variable_degree;
 
 pub struct Prover<F, P>
 where
@@ -48,59 +46,50 @@ where
         })
     }
 
-    pub fn construct_univariate(
+    // attribution: https://github.com/punwai/sumcheck/blob/main/src/main.rs
+    pub fn construct_uni_poly(
         g: &SparsePolynomial<F, SparseTerm>,
         r_i: &[F],
         round: usize,
     ) -> DensePolynomial<F> {
+        let mut coefficients = vec![F::zero(); g.degree() + 1];
         let v = g.num_vars();
-        let d = get_variable_degree(g, round);
 
-        // Initialize the coefficients for the univariate polynomial.
-        let mut coefficients: Vec<F> = vec![F::zero(); v + 1];
-
-        // Iterate over all combinations for the unfixed variables.
-        for combo in 0..(1 << (v - r_i.len())) {
-            let mut point: Vec<F> = r_i.to_vec(); // Start with the fixed values
-            point.resize(v, F::zero()); // Extend the point vector to the full size
-
-            // Set the binary values for the unfixed variables.
-            for j in r_i.len()..v {
-                if j != round {
-                    point[j] = F::from(((combo >> (j - r_i.len())) & 1) as u64);
+        // number of inputs to generate, we substract round because it's the nb of already known
+        // inputs at the round; at round 1 we will have r_i.len() = 1
+        for i in 0..2i32.pow((v - round - 1) as u32) {
+            let mut inputs: Vec<F> = vec![];
+            // adding inputs from previous rounds
+            inputs.extend(r_i);
+            // adding round variable
+            inputs.push(F::zero());
+            // generating inputs for the rest of the variables
+            let mut counter = i;
+            for _ in 0..(v - round - 1) {
+                if counter % 2 == 0 {
+                    inputs.push(0.into());
+                } else {
+                    inputs.push(1.into());
                 }
+                counter /= 2;
             }
 
-            point[round] = F::zero(); // Set the variable to keep to 0
-            coefficients[0] += g.evaluate(&point);
+            //computing polynomial coef from evaluation
+            for (c, t) in g.terms.clone().into_iter() {
+                let mut c_acc = F::one();
+                let mut which = 0;
 
-            point[round] = F::one(); // Set the variable to keep to 1
-            coefficients[1] += g.evaluate(&point);
+                for (&var, pow) in t.vars().iter().zip(t.powers()) {
+                    if var == round {
+                        which = pow;
+                    } else {
+                        c_acc *= inputs[var].pow([pow as u64]);
+                    }
+                }
+                coefficients[which] += c * c_acc;
+            }
         }
+
         DensePolynomial::from_coefficients_vec(coefficients)
-    }
-
-    pub fn construct_univariate_eval(
-        g: &SparsePolynomial<F, SparseTerm>,
-        r_i: &[F],
-        round: usize,
-    ) -> Evaluations<F> {
-        let v = g.num_vars();
-        let mut coefficients: Vec<F> = vec![F::zero(); v + 1];
-
-        for i in 0..(v + 1) {
-            let mut point: Vec<F> = vec![F::zero(); v];
-            for j in 0..v {
-                point[j] = F::from(((i >> (j - r_i.len())) & 1) as u64);
-            }
-            point.pop();
-            point.insert(0, F::zero());
-
-            coefficients[i] = g.evaluate(&point);
-            point[0] = F::one();
-            coefficients[i] += g.evaluate(&point);
-        }
-
-        Evaluations
     }
 }

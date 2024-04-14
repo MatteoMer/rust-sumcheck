@@ -22,15 +22,13 @@ where
         let mut rng = rand::thread_rng();
 
         let r: u8 = rng.gen();
-        F::from(2)
+        F::from(r)
     }
 
     pub fn check_claim(&self, g_j: &DensePolynomial<F>, c_j: F, round: usize) -> bool {
         // check if g_j(0) + g_j(1) = c_j
         let eval_zero = g_j.evaluate(&F::zero());
         let eval_one = g_j.evaluate(&F::one());
-        println!("{:?}", g_j.to_vec());
-        println!("{}+{}={}", eval_zero, eval_one, c_j);
         if eval_zero + eval_one != c_j {
             return false;
         }

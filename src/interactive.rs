@@ -24,25 +24,21 @@ where
     let mut r_i: Vec<F> = Vec::new();
 
     // first round
-    let g_1 = Prover::construct_univariate(&p.g, &r_i, 0);
-    let _g_1 = Prover::construct_univariate_poly(&p.g, &r_i, 0);
-    println!("_g_1:{:?}", _g_1.to_vec());
-    println!("g_1:{:?}", g_1.to_vec());
-    if !v.check_claim(&_g_1, p.h, 0) {
+    let g_1 = Prover::construct_uni_poly(&p.g, &r_i, 0);
+    if !v.check_claim(&g_1, p.h, 0) {
         panic!("claimed failed at first round");
     }
     let mut r = v.send_random_challenge();
     r_i.push(r);
 
-    println!("g_1:{:?}\nr_1:{}", g_1.to_vec(), r);
     let mut c_i = g_1.evaluate(&r);
 
     // j-th rounds
     for round in 1..nb_rounds - 1 {
-        let g_i = Prover::construct_univariate(&p.g, &r_i, round);
+        let g_i = Prover::construct_uni_poly(&p.g, &r_i, round);
 
         if !v.check_claim(&g_i, c_i, round) {
-            panic!("claimed failed at round {}", round + 1);
+            panic!("claimed failed at round {}", round);
         }
         r = v.send_random_challenge();
         r_i.push(r);
@@ -50,7 +46,7 @@ where
     }
 
     // last round
-    let g_v = Prover::construct_univariate(&p.g, &r_i, nb_rounds - 1);
+    let g_v = Prover::construct_uni_poly(&p.g, &r_i, nb_rounds - 1);
     if !v.check_claim(&g_v, c_i, nb_rounds - 1) {
         panic!("claimed failed at last round");
     }
